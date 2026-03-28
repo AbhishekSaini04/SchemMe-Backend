@@ -8,6 +8,7 @@ import fs from "fs";
 import path from "path";
 import csv from "csv-parser";
 import schemeSearchRoute from "./routes/schemeSearch.route.js";
+import { chatBOT } from "./controllers/chatBOT.controller.js";
 import { PrismaClient } from "@prisma/client";
 
 // ==========================
@@ -108,7 +109,6 @@ app.get("/import-schemes", async (req, res) => {
         console.error("❌ CSV Read Error:", err);
         res.status(500).json({ error: "CSV read failed" });
       });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "❌ Import failed" });
@@ -116,6 +116,31 @@ app.get("/import-schemes", async (req, res) => {
 });
 
 app.use("/api/schemes", schemeSearchRoute);
+
+app.post("/api/chat", async (req, res) => {
+  try {
+    const { message, userId } = req.body;
+    if (!message) {
+      return res.status(400).json({ error: "Message is required" });
+    }
+
+    console.log("Chat message received:", message);
+    console.log("User ID:", userId);
+
+    const response = await chatBOT(message);
+    console.log("ChatBOT response:", response);
+    // TODO: Implement chatBOT logic here
+    return res.json({
+      message: message,
+      received: message,
+      userId: userId || null,
+      botResponse: response,
+    });
+  } catch (error) {
+    console.error("Chat error:", error);
+    res.status(500).json({ error: "Chat failed" });
+  }
+});
 
 // ==========================
 // START SERVER

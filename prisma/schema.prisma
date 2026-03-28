@@ -23,16 +23,19 @@ model otp {
 }
 
 model user {
-  id        Int      @id @default(autoincrement())
-  name      String?
-  email     String   @unique
-  password  String   @default("")
-  gender    String   @default("")
-  category  String   @default("")
-  isEWS     Boolean  @default(false)
-  isPWD     Boolean  @default(false)
-  ISBPL     Boolean  @default(false)
-  role      Role     @default(USER)
+  id       Int     @id @default(autoincrement())
+  name     String?
+  email    String  @unique
+  password String  @default("")
+  gender   String  @default("")
+  category String  @default("")
+  isEWS    Boolean @default(false)
+  isPWD    Boolean @default(false)
+  ISBPL    Boolean @default(false)
+  role     Role    @default(USER)
+
+  savedSchemes SavedSchemes[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -48,18 +51,32 @@ enum Role {
   SELF_EMPLOYED
   DEFENSE_PERSONNEL
 }
+
 model Scheme {
-  id              Int     @id @default(autoincrement())
-  scheme_name     String
-  slug            String?
-  details         String?
-  benefits        String?
-  eligibility     String?
-  application     String?
-  documents       String?
-  level           String?
-  schemeCategory  String?
-  tags            String?
-  level_name      String?
-  search_tags     String?
+  id             Int     @id @default(autoincrement())
+  scheme_name    String
+  slug           String?
+  details        String?
+  benefits       String?
+  eligibility    String?
+  application    String?
+  documents      String?
+  level          String?
+  schemeCategory String?
+  tags           String?
+  level_name     String?
+  search_tags    String?
+
+  savedByUsers SavedSchemes[]
+}
+
+model SavedSchemes {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  schemeId  Int
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scheme    Scheme   @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, schemeId])
 }

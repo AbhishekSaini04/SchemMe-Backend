@@ -7,6 +7,8 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import csv from "csv-parser";
+import schemeSearchRoute from "./routes/schemeSearch.route.js";
+import savedSchemeRoute from "./routes/savedScheme.route.js";
 import { PrismaClient } from "@prisma/client";
 // ==========================
 // INIT
@@ -19,8 +21,8 @@ const port = process.env.PORT || 3005;
 import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-// CSV path
-const CSV_PATH = path.join(__dirname, "public", "schemes", "schemes.csv");
+// CSV path (fixed)
+const CSV_PATH = path.join(__dirname, "public", "schemes.csv");
 // ==========================
 // MIDDLEWARE
 // ==========================
@@ -28,11 +30,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // ==========================
+// UTILS (🔥 IMPORTANT)
+// ==========================
+const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+// ==========================
 // ROUTES
 // ==========================
 app.get("/", (req, res) => {
     res.send("🚀 Server is running");
 });
+// ==========================
+// IMPORT ROUTE (FIXED)
 // ==========================
 app.get("/import-schemes", async (req, res) => {
     try {
@@ -57,25 +65,61 @@ app.get("/import-schemes", async (req, res) => {
         })
             .on("end", async () => {
             console.log(`📊 Total rows: ${results.length}`);
-            // BULK INSERT (chunked)
-            const chunkSize = 500;
+            // 🔥 FIXED SETTINGS
+            const chunkSize = 100; // ↓ reduced from 500
+            let successCount = 0;
             for (let i = 0; i < results.length; i += chunkSize) {
                 const chunk = results.slice(i, i + chunkSize);
-                await prisma.scheme.createMany({
-                    data: chunk,
-                    skipDuplicates: true,
-                });
-                console.log(`✅ Inserted chunk ${i / chunkSize + 1}`);
+                try {
+                    await prisma.scheme.createMany({
+                        data: chunk,
+                        skipDuplicates: true,
+                    });
+                    successCount += chunk.length;
+                    console.log(`✅ Inserted chunk ${i / chunkSize + 1}`);
+                }
+                catch (err) {
+                    console.error("❌ Chunk failed:", err);
+                }
+                // 🔥 VERY IMPORTANT (prevents crash)
+                await sleep(200);
             }
             res.json({
                 message: "✅ Data imported successfully",
+                inserted: successCount,
                 total: results.length,
             });
+        })
+            .on("error", (err) => {
+            console.error("❌ CSV Read Error:", err);
+            res.status(500).json({ error: "CSV read failed" });
         });
     }
     catch (err) {
         console.error(err);
         res.status(500).json({ error: "❌ Import failed" });
+    }
+});
+app.use("/api/schemes", schemeSearchRoute);
+app.use("/api/saved-schemes", savedSchemeRoute);
+app.post("/api/chat", async (req, res) => {
+    try {
+        const { message, userId } = req.body;
+        if (!message) {
+            return res.status(400).json({ error: "Message is required" });
+        }
+        console.log("Chat message received:", message);
+        console.log("User ID:", userId);
+        // TODO: Implement chatBOT logic here
+        return res.json({
+            message: "Chat endpoint is working",
+            received: message,
+            userId: userId || null,
+        });
+    }
+    catch (error) {
+        console.error("Chat error:", error);
+        res.status(500).json({ error: "Chat failed" });
     }
 });
 // ==========================

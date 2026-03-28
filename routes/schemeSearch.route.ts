@@ -60,6 +60,44 @@ const getSchemesByCategory = async (category: string, res: Response) => {
 // ==========================
 // ROUTES (ALL CATEGORIES)
 // ==========================
+//for all
+// router.get("/", async (req: Request, res: Response) => {
+//   try {
+//     const schemes = await prisma.scheme.findMany(); // 🔥 removed limit
+
+//     res.json({
+//       totalSchemes: schemes.length,
+//       data: schemes,
+//     });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Failed to fetch schemes" });
+//   }
+// });
+
+router.get("/", async (req: Request, res: Response) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 100;
+
+    const schemes = await prisma.scheme.findMany({
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const total = await prisma.scheme.count();
+
+    res.json({
+      totalSchemes: total,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      data: schemes,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch schemes" });
+  }
+});
 
 // Agriculture
 router.get("/agriculture", async (req: Request, res: Response) => {
