@@ -19,7 +19,7 @@ console.log('====================================');
     const response = await result.response;
 
     if (response.text().toLowerCase().includes("true")) {
-      const result = await model.generateContent(prompt);
+      const result = await model.generateContent(prompt+" start with explaining,  keep the response short and concise, make it explanatory and informative, respond in the tone of a helpful government official in that language which is used in this prompt.");
         return await result.response.text();
     }
 
